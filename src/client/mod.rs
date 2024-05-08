@@ -161,15 +161,21 @@ impl Client {
     }
 
     fn time_change(&mut self, data: Property) -> Result<()> {
-        log::trace!("Received property-change event [{data}]");
+        log::trace!(
+            "Received property-change event [{data}] with data: {:?}",
+            data.data::<f64>()
+        );
         // Skipping before a certain time can lead to undefined behaviour
         // https://github.com/TheCactusVert/mpv-sponsorblock/issues/5
         if let Some(time_pos) = data.data().filter(|t| t >= &0.5_f64) {
             if let Some(s) = self.get_skip_segment(time_pos) {
+                log::debug!("Found skip segment");
                 self.skip(s) // Skip segments are priority
             } else if let Some(s) = self.get_mute_segment(time_pos) {
+                log::debug!("Found mute segment");
                 self.mute(s)
             } else {
+                log::debug!("No skip/mute segment found, resetting");
                 self.reset()
             }
         } else {
